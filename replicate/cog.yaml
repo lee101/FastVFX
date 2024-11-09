@@ -1,4 +1,4 @@
-image: "r8.im/lee101/video-av1-processor"
+image: "r8.im/lee101/fast-vfx"
 build:
   python_version: "3.11"
   gpu: true

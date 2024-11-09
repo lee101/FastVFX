@@ -4,6 +4,25 @@ This repository contains a Cog-compatible implementation of video thresholding w
 
 ## How to use
 
+fork the project and deploy your own version.
+
+create a new model in replicate.com, and in cog.yaml, change the image to your username/repo.
+
+```bash
+image: "r8.im/lee101/fast-vfx"
+```
+Change how you process the video in [predict.py](replicate/predict.py).
+
+
+
+then push your changes to replicate.
+
+```bash
+cog push
+```
+
+then you can use your model with the following command.
+
 ```bash
 sudo cog predict -i video="https://netwrckstatic.netwrck.com/input2.mp4" -i threshold=0.5
 ```
@@ -11,9 +30,11 @@ sudo cog predict -i video="https://netwrckstatic.netwrck.com/input2.mp4" -i thre
 ## Development
 
 ```bash
-virtualenv .env
-source .env/bin/activate
-pip install -r requirements.txt
+cd replicate
+pip install uv
+uv venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
 ```
 
 
@@ -56,7 +77,6 @@ cog push
 
 - [ ] Add support for batch processing
 - [ ] Implement more video filters
-- [ ] Add progress callback
 - [ ] Support CPU fallback when GPU is unavailable
 - [ ] Add video preprocessing options
 
@@ -65,7 +85,11 @@ cog push
 The predictor is optimized for GPU execution with:
 - CUDA-accelerated video decoding
 - In-memory frame processing
-- Hardware-accelerated AV1 encoding
+- Hardware-accelerated encoding
 - RAM disk usage for temporary files
+
+I need to test newer codecs like AV1 etc.
+
+Please help me test and improve this model!
 
 Let me know if you need help with implementation details or have suggestions for improvements!
