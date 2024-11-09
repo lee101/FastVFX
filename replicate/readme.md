@@ -16,6 +16,14 @@ source .env/bin/activate
 pip install -r requirements.txt
 ```
 
+
+
+## deploy
+
+```bash
+cog push
+```
+
 ## Implementation Details
 
 The predictor uses:
