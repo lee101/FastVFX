@@ -1,29 +1,24 @@
 import modal
 
 # Create Modal image with required dependencies
-image = modal.Image.debian_slim().pip_install(
+image = modal.Image.from_registry("nvidia/cuda:12.4.0-devel-ubuntu22.04", add_python="3.11").pip_install(
     "fastapi[standard]",
-    "python-multipart",
+    "python-multipart", 
     "torch",
     "torchaudio",
     "torchvision",
-    find_links="https://download.pytorch.org/whl/cu121"
+    find_links="https://download.pytorch.org/whl/cu124"
 ).run_commands(
     # Install build dependencies
     "apt-get update && apt-get install -y build-essential cmake yasm pkg-config git curl",
-    "apt-get install -y libx264-dev libx265-dev libnuma-dev libvpx-dev libfdk-aac-dev libmp3lame-dev libopus-dev libaom-dev",
-    # Install CUDA
-    "curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/debian11/x86_64/cuda-keyring_1.1-1_all.deb -O",
-    "dpkg -i cuda-keyring_1.1-1_all.deb",
-    "apt-get update",
-    "apt-get install -y cuda-nvcc-12-3 cuda-libraries-12-3",
+    "apt-get install -y libx264-dev libx265-dev libnuma-dev libvpx-dev libmp3lame-dev libopus-dev libaom-dev",
     # Build NVIDIA headers
     "git clone https://git.videolan.org/git/ffmpeg/nv-codec-headers.git",
     "cd nv-codec-headers && make install && cd .. && rm -rf nv-codec-headers",
     # Build FFmpeg 6
     "git clone --branch release/6.1 --depth 1 https://git.ffmpeg.org/ffmpeg.git ffmpeg",
-    "cd ffmpeg && ./configure --enable-nonfree --enable-cuda-nvcc --enable-libnpp --enable-gpl --enable-libx264 --enable-libx265 --enable-nvenc --enable-cuvid --enable-libvpx --enable-libopus --enable-libmp3lame --enable-libaom --enable-libsvtav1 --enable-av1_nvenc --prefix=/usr/local",
-    "cd ffmpeg && make -j$(nproc) && make install",
+    "cd ffmpeg && ./configure --enable-nonfree --enable-cuda-nvcc--enable-gpl --enable-libx264 --enable-libx265 --enable-nvenc --enable-cuvid --enable-libvpx --enable-libopus --enable-libmp3lame --enable-libaom --enable-libsvtav1 --prefix=/usr/local",
+    "cd ffmpeg && make -j$(nproc) && make install", 
     "cd .. && rm -rf ffmpeg",
     # Update library path
     "ldconfig"

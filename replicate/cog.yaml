@@ -1,0 +1,32 @@
+image: "r8.im/your-username/video-av1-processor"
+build:
+  python_version: "3.11"
+  gpu: true
+  python_packages:
+    - "fastapi[standard]"
+    - "python-multipart"
+    - "torch"
+    - "torchaudio"
+    - "torchvision"
+    - "--extra-index-url https://download.pytorch.org/whl/cu124"
+  system_packages:
+    - "build-essential"
+    - "cmake"
+    - "yasm"
+    - "pkg-config"
+    - "git"
+    - "curl"
+    - "libx264-dev"
+    - "libx265-dev"
+    - "libnuma-dev"
+    - "libvpx-dev"
+    - "libmp3lame-dev"
+    - "libopus-dev"
+    - "libaom-dev"
+  run:
+    - git clone https://git.videolan.org/git/ffmpeg/nv-codec-headers.git && cd nv-codec-headers && make install && cd .. && rm -rf nv-codec-headers
+    - git clone --branch release/6.1 --depth 1 https://git.ffmpeg.org/ffmpeg.git ffmpeg
+    - cd ffmpeg && ./configure --enable-nonfree --enable-cuda-nvcc --enable-gpl --enable-libx264 --enable-libx265 --enable-nvenc --enable-cuvid --enable-libvpx --enable-libopus --enable-libmp3lame --enable-libaom --enable-libsvtav1 --prefix=/usr/local
+    - cd ffmpeg && make -j$(nproc) && make install && cd .. && rm -rf ffmpeg
+    - ldconfig
+predict: "start.py:Predictor" 
