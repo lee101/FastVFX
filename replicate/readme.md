@@ -37,7 +37,18 @@ source .venv/bin/activate
 uv pip install -r requirements.txt
 ```
 
+```bash
+sudo cog build
+docker run -d -p 5000:5000 --gpus all r8.im/lee101/fast-vfx
 
+curl -X POST http://localhost:5000/predictions -H "Content-Type: application/json" -d '{"input": {"video": "https://netwrckstatic.netwrck.com/input2.mp4", "num_levels": 25, "output_codec": "h264_nvenc"}}'
+
+
+
+### testing the container
+
+
+```bash
 
 ## deploy
 
