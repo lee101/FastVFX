@@ -48,7 +48,20 @@ curl -X POST http://localhost:5000/predictions -H "Content-Type: application/jso
 ### testing the container
 
 
+shell in
 ```bash
+docker run -i -t -u root --entrypoint=/bin/bash r8.im/lee101/fast-vfx -c /bin/bash
+```
+
+install pytest
+```bash
+pip install pytest
+```
+
+run tests
+```bash
+PYTHONPATH=. pytest
+```
 
 ## deploy
 

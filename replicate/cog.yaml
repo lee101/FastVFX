@@ -26,15 +26,19 @@ build:
     - "libaom-dev"
     - "libsvtav1-dev"
     - "libgl1-mesa-glx"
+    - "nvidia-cuda-toolkit"
     # - "libsvtav1-enc-dev"
   run:
     - git clone https://git.videolan.org/git/ffmpeg/nv-codec-headers.git && cd nv-codec-headers && make install && cd .. && rm -rf nv-codec-headers
     - git clone --branch release/6.1 --depth 1 https://git.ffmpeg.org/ffmpeg.git ffmpeg
     # todo --enable-libsvtav1 
-    - cd ffmpeg && ./configure --enable-nonfree --enable-cuda-nvcc --enable-gpl --enable-libx264 --enable-libx265 --enable-nvenc --enable-cuvid --enable-libvpx --enable-libopus --enable-libmp3lame --enable-libaom  --prefix=/usr/local
+    - cd ffmpeg && ./configure --enable-nonfree --enable-cuda-nvcc --enable-gpl --enable-libx264 --enable-libx265 --enable-nvenc --enable-cuvid --enable-libvpx --enable-libopus --enable-libmp3lame --enable-libaom --extra-cflags=-I/usr/local/cuda/include --extra-ldflags=-L/usr/local/cuda/lib64 --prefix=/usr/local
     - cd ffmpeg && make -j$(nproc) && make install && cd .. && rm -rf ffmpeg
     - ldconfig
     - hash -r
-    - export PATH="/usr/local/bin:$PATH"
-    - export LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
+    - echo "/usr/local/lib" > /etc/ld.so.conf.d/local.conf
+    - echo "/usr/local/cuda/lib64" >> /etc/ld.so.conf.d/local.conf
+    - ldconfig
+    - export PATH="/usr/local/bin:/usr/local/cuda/bin:$PATH"
+    - export LD_LIBRARY_PATH="/usr/local/lib:/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
 predict: "predict.py:Predictor"
