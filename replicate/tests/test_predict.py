@@ -38,7 +38,14 @@ def test_predict():
     
         
     output_path = predictor.predict(video_path, 25, "h264_nvenc")
+    # Save output video to disk
+    output_dir = Path('tests')
+    output_dir.mkdir(exist_ok=True)
+    test_output_path = output_dir / 'test_output.mp4'
     
+    # Copy output file to test directory
+    import shutil
+    shutil.copy(output_path, test_output_path)
     assert output_path.exists()
     assert output_path.suffix == '.mp4' 
 

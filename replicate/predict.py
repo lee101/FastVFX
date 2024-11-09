@@ -63,7 +63,8 @@ class Predictor(BasePredictor):
                 '-cq:v', '19',
                 '-b:v', '0',
                 '-maxrate:v', '130M',
-                '-profile:v', 'high'
+                '-profile:v', 'high',
+                '-pix_fmt', 'yuv444p'  # Force YUV444P output
             ]
         else:
             # AV1 settings
@@ -72,11 +73,11 @@ class Predictor(BasePredictor):
                 '-preset', 'p7',
                 '-rc', 'vbr',
                 '-cq', '19',
-                '-b:v', '0'
+                '-b:v', '0',
+                '-pix_fmt', 'yuv444p'  # Force YUV444P output
             ]
 
         command = base_command + encode_settings + [
-            '-pix_fmt', 'yuv420p',
             '-gpu', '0',
             '-movflags', '+faststart',
             self.output_path
@@ -87,12 +88,6 @@ class Predictor(BasePredictor):
     def _threshold_frame(self, frame: torch.Tensor, threshold: float) -> torch.Tensor:
         """Apply color quantization to a frame."""
         return quantize_colors(frame, num_levels=25)
-
-    def _get_frame_dimensions(self, video_stream) -> Tuple[int, int]:
-        """Get frame dimensions from the first video chunk."""
-        for chunk, in video_stream.stream():
-            return chunk.shape[-2:]
-        raise ValueError("Could not read video dimensions")
 
     def predict(
         self,
@@ -111,23 +106,24 @@ class Predictor(BasePredictor):
         decoder = self._get_decoder_for_extension(video)
         video_stream.add_video_stream(1, decoder=decoder, hw_accel="cuda:0")
 
-        # Get frame dimensions
-        frame_height, frame_width = self._get_frame_dimensions(video_stream)
-
-        # Setup FFMPEG pipe
-        pipe = self._setup_ffmpeg_pipe(frame_width, frame_height, output_codec)
-
+        pipe = None
         try:
             # Process frames
             for chunk, in video_stream.stream():
                 chunk = chunk.to(device)
-                banded = self._threshold_frame(chunk, num_levels)
                 
+                # Setup FFMPEG pipe on first frame using its dimensions
+                if pipe is None:
+                    frame_height, frame_width = chunk.shape[-2:]
+                    pipe = self._setup_ffmpeg_pipe(frame_width, frame_height, output_codec)
+                
+                banded = self._threshold_frame(chunk, num_levels)
                 frame_rgb = banded.cpu().numpy().astype(np.uint8)
                 pipe.stdin.write(frame_rgb.tobytes())
         finally:
-            if pipe.stdin:
+            if pipe and pipe.stdin:
                 pipe.stdin.close()
-            pipe.wait()
+            if pipe:
+                pipe.wait()
 
         return Path(self.output_path)
