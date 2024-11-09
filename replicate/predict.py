@@ -3,7 +3,6 @@ import tempfile
 import torch
 import numpy as np
 import subprocess as sp
-from typing import Optional, Tuple
 import subprocess
 import cv2
 from banding import quantize_colors
