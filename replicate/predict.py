@@ -5,6 +5,7 @@ import numpy as np
 import subprocess as sp
 from typing import Optional, Tuple
 import subprocess
+import cv2
 from banding import quantize_colors
 
 try:
@@ -41,15 +42,18 @@ class Predictor(BasePredictor):
         return 'h264'  # Fallback decoder
 
     def _setup_ffmpeg_pipe(self, frame_width: int, frame_height: int, output_codec: str) -> subprocess.Popen:
-        """Setup FFMPEG pipe with AV1 NVENC or H264 NVENC."""
+        """Setup FFMPEG pipe using image2pipe for PNG input."""
         base_command = [
-            'ffmpeg', '-loglevel', 'error', '-y',
-            '-f', 'rawvideo',
-            '-vcodec', 'rawvideo',
-            '-pix_fmt', 'rgb24',
-            '-s', f'{frame_width}x{frame_height}',
-            '-r', '24',
-            '-i', '-',
+            'ffmpeg',
+            '-loglevel', 'error',
+            '-y',
+            
+            # Input format configuration
+            '-f', 'image2pipe',
+            '-framerate', '24',
+            '-i', '-',  # Read from stdin
+            
+            # Disable audio
             '-an'
         ]
 
@@ -57,14 +61,9 @@ class Predictor(BasePredictor):
             # H264 specific settings
             encode_settings = [
                 '-c:v', 'h264_nvenc',
-                '-preset', 'p7',
-                '-tune', 'hq',
-                '-rc:v', 'vbr',
-                '-cq:v', '19',
-                '-b:v', '0',
-                '-maxrate:v', '130M',
-                '-profile:v', 'high',
-                '-pix_fmt', 'yuv444p'  # Force YUV444P output
+                '-preset', 'medium',
+                '-crf', '23',
+                '-pix_fmt', 'yuv444p'
             ]
         else:
             # AV1 settings
@@ -74,7 +73,7 @@ class Predictor(BasePredictor):
                 '-rc', 'vbr',
                 '-cq', '19',
                 '-b:v', '0',
-                '-pix_fmt', 'yuv444p'  # Force YUV444P output
+                '-pix_fmt', 'yuv444p'
             ]
 
         command = base_command + encode_settings + [
@@ -85,8 +84,16 @@ class Predictor(BasePredictor):
         
         return sp.Popen(command, stdin=sp.PIPE)
 
+    def _frame_to_png_bytes(self, frame: np.ndarray) -> bytes:
+        """Convert frame to PNG bytes using OpenCV."""
+        success, encoded_image = cv2.imencode('.png', frame)
+        if not success:
+            raise RuntimeError("Failed to encode frame as PNG")
+        return encoded_image.tobytes()
+
     def _threshold_frame(self, frame: torch.Tensor, threshold: float) -> torch.Tensor:
         """Apply color quantization to a frame."""
+        # return frame
         return quantize_colors(frame, num_levels=25)
 
     def predict(
@@ -116,10 +123,23 @@ class Predictor(BasePredictor):
                 if pipe is None:
                     frame_height, frame_width = chunk.shape[-2:]
                     pipe = self._setup_ffmpeg_pipe(frame_width, frame_height, output_codec)
-                
+                print(chunk.shape)
                 banded = self._threshold_frame(chunk, num_levels)
+                print(banded.shape)
+                print(banded.device)
+                print(banded.dtype)
                 frame_rgb = banded.cpu().numpy().astype(np.uint8)
-                pipe.stdin.write(frame_rgb.tobytes())
+                # Convert from [1, 3, H, W] to [H, W, 3] format for OpenCV
+                frame_rgb = frame_rgb.squeeze(0).transpose(1, 2, 0)
+                # Convert BGR to RGB since OpenCV uses BGR by default
+                # Convert from RGB to YUV colorspace for proper color handling
+                # frame_rgb = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2YUV)
+                # Convert back to RGB 
+                frame_rgb = cv2.cvtColor(frame_rgb, cv2.COLOR_YUV2RGB)
+                frame_rgb = cv2.cvtColor(frame_rgb, cv2.COLOR_BGR2RGB)
+                # Convert frame to PNG bytes and write to pipe
+                png_bytes = self._frame_to_png_bytes(frame_rgb)
+                pipe.stdin.write(png_bytes)
         finally:
             if pipe and pipe.stdin:
                 pipe.stdin.close()
