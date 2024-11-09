@@ -24,7 +24,7 @@ build:
     - "libopus-dev"
     - "libaom-dev"
     - "libsvtav1-dev"
-    - "libsvtav1-enc-dev"
+    # - "libsvtav1-enc-dev"
   run:
     - git clone https://git.videolan.org/git/ffmpeg/nv-codec-headers.git && cd nv-codec-headers && make install && cd .. && rm -rf nv-codec-headers
     - git clone --branch release/6.1 --depth 1 https://git.ffmpeg.org/ffmpeg.git ffmpeg
