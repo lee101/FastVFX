@@ -2,6 +2,8 @@ image: "r8.im/lee101/fast-vfx"
 build:
   python_version: "3.11"
   gpu: true
+  cuda: "12.2"
+
   python_packages:
     - "fastapi[standard]"
     - "python-multipart"
@@ -9,7 +11,7 @@ build:
     - "torchaudio"
     - "torchvision"
     - "opencv-python"
-    - "--extra-index-url https://download.pytorch.org/whl/cu124"
+    - "--extra-index-url https://download.pytorch.org/whl/cu122"
   system_packages:
     - "build-essential"
     - "cmake"
@@ -26,12 +28,18 @@ build:
     - "libaom-dev"
     - "libsvtav1-dev"
     - "libgl1-mesa-glx"
-    - "nvidia-cuda-toolkit"
-    # - "libsvtav1-enc-dev"
+    - "ffmpeg"
+    - "libavcodec-dev"
+    - "libavdevice-dev" 
+    - "libavfilter-dev"
+    - "libavformat-dev"
+    - "libavutil-dev"
+    - "libpostproc-dev"
+    - "libswresample-dev"
+    - "libswscale-dev"
   run:
     - git clone https://git.videolan.org/git/ffmpeg/nv-codec-headers.git && cd nv-codec-headers && make install && cd .. && rm -rf nv-codec-headers
     - git clone --branch release/6.1 --depth 1 https://git.ffmpeg.org/ffmpeg.git ffmpeg
-    # todo --enable-libsvtav1 
     - cd ffmpeg && ./configure --enable-nonfree --enable-cuda-nvcc --enable-gpl --enable-libx264 --enable-libx265 --enable-nvenc --enable-cuvid --enable-libvpx --enable-libopus --enable-libmp3lame --enable-libaom --extra-cflags=-I/usr/local/cuda/include --extra-ldflags=-L/usr/local/cuda/lib64 --prefix=/usr/local
     - cd ffmpeg && make -j$(nproc) && make install && cd .. && rm -rf ffmpeg
     - ldconfig
