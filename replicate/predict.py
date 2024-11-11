@@ -60,7 +60,7 @@ class Predictor(BasePredictor):
             # H264 specific settings
             encode_settings = [
                 '-c:v', 'h264_nvenc',
-                '-preset', 'medium',
+                '-preset', 'high',
                 '-crf', '23',
                 '-pix_fmt', 'yuv444p'
             ]
@@ -90,10 +90,10 @@ class Predictor(BasePredictor):
             raise RuntimeError("Failed to encode frame as PNG")
         return encoded_image.tobytes()
 
-    def _threshold_frame(self, frame: torch.Tensor, threshold: float) -> torch.Tensor:
+    def _threshold_frame(self, frame: torch.Tensor, num_levels: int) -> torch.Tensor:
         """Apply color quantization to a frame."""
         # return frame
-        return quantize_colors(frame, num_levels=25)
+        return quantize_colors(frame, num_levels=num_levels)
 
     def predict(
         self,
